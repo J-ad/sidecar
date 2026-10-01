@@ -13,7 +13,7 @@
     <%= link_to(params[:hidden] == "1" ? "← Active items" : "Snoozed / dismissed (#{@hidden_count})", root_path(source: @source, project: params[:project], q: params[:q], hidden: params[:hidden] == "1" ? nil : "1"), class: "text-link") %>
   </div>
   <nav class="source-tabs" aria-label="Filter by source">
-    <% {nil => "All sources", "codex" => "Codex", "claude" => "Claude Code", "github" => "GitHub", "slack" => "Slack"}.each do |key, label| %>
+    <% {nil => "All sources", "codex" => "Codex", "claude" => "Claude Code", "github" => "GitHub"}.each do |key, label| %>
       <%= link_to label, root_path(source: key, project: params[:project], q: params[:q], hidden: params[:hidden]), class: @source == key ? "source-tab selected" : "source-tab", aria: {current: @source == key ? "page" : nil} %>
     <% end %>
   </nav>
@@ -40,12 +40,6 @@
       <% if attention.any? %><h3 class="group-heading">Needs you · <%= attention.size %></h3><%= render partial: "item", collection: attention, locals: {source: source, state: state} %><% end %>
       <% if progress.any? %><h3 class="group-heading">Working / waiting · <%= progress.size %></h3><%= render partial: "item", collection: progress, locals: {source: source, state: state} %><% end %>
       <% if history.any? %><details class="history-group"><summary>History / unverified · <%= history.size %></summary><%= render partial: "item", collection: history, locals: {source: source, state: state} %></details><% end %>
-    </section>
-  <% end %>
-  <% if @source.nil? || @source == "slack" %>
-    <section class="section" id="slack" aria-label="Slack">
-      <div class="section-heading"><span class="section-number">04</span><div><h2>Slack</h2><p>Selected threads and next actions</p></div></div>
-      <div class="empty"><span>—</span><p>Slack is not connected. No threads or action status are available.</p></div>
     </section>
   <% end %>
   </main>

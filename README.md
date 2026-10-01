@@ -157,7 +157,7 @@ Sidecar's original source is [MIT licensed](LICENSE), copyright Jan Adamski. Thi
 
 ### Source filters and language
 
-The English interface has All sources, Codex, Claude Code, GitHub and Slack buttons. Each button shows only its source and preserves search, project and snoozed/dismissed filters. Imported titles and summaries retain their original language. Slack currently has an explicit unavailable section; the button does not connect an account or read messages.
+The English interface has All sources, Codex, Claude Code and GitHub buttons. Each button shows only its source and preserves search, project and snoozed/dismissed filters. Imported titles and summaries retain their original language. Slack is excluded from this release.
 
 ### Agent questions
 

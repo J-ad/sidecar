@@ -4,7 +4,7 @@ class PanelController < ApplicationController
     sync.refresh unless ENV["WORK_PANEL_BACKGROUND"] == "1"
     @automatic_sessions = sync.enabled? || PanelConfig.new.settings.dig("sources", "github", "automatic") == true
     @revision = SyncRevision.current
-    @source = (Item::SOURCES + ["slack"]).include?(params[:source]) ? params[:source] : nil
+    @source = Item::SOURCES.include?(params[:source]) ? params[:source] : nil
     @config = PanelConfig.new
     @states = SourceState.all.index_by(&:source)
     @items = Item.where(source: Item::SOURCES).order(source_updated_at: :desc, id: :desc).to_a

@@ -4,10 +4,10 @@ class PanelTest < ActionDispatch::IntegrationTest
     host! "127.0.0.1"
     @item = Item.create!(source: "github", external_id: "pr", title: "Real PR", facts: {"merged" => true, "production_followup_required" => true}, observed_at: Time.current)
   end
-  test "four independent sections and persistent production checklist" do
+  test "three independent sections and persistent production checklist" do
     get root_path
     assert_response :success
-    %w[codex claude github slack].each { |source| assert_select "section##{source}", count: 1 }
+    %w[codex claude github].each { |source| assert_select "section##{source}", count: 1 }
     assert_select "script[src='/turbo.js']"
     patch item_path(@item), params: {operation: "dismiss"}
     follow_redirect!
@@ -23,27 +23,26 @@ class PanelTest < ActionDispatch::IntegrationTest
     assert_select 'nav.source-tabs a[aria-current="page"]', text: "GitHub"
     assert_select 'input[name="source"][value="github"]'
     get root_path, params: {source: "unsupported"}
-    assert_select "main section", count: 4
+    assert_select "main section", count: 3
   end
-  test "each source filter shows only its section including unavailable Slack" do
-    %w[codex claude github slack].each do |source|
+  test "each source filter shows only its section" do
+    %w[codex claude github].each do |source|
       get root_path, params: {source: source, hidden: "1"}
       assert_response :success
       assert_select "main section", count: 1
       assert_select "section##{source}", count: 1
       assert_select 'nav.source-tabs a[aria-current="page"]', count: 1
-      assert_select 'nav.source-tabs a[href*="hidden=1"]', count: 5
+      assert_select 'nav.source-tabs a[href*="hidden=1"]', count: 4
     end
-    assert_select "#slack .empty p", text: "Slack is not connected. No threads or action status are available."
-    assert_select "article", count: 0
+    assert_select "section#slack", count: 0
   end
   test "hidden view shows only hidden items and tabs retain search and project" do
     @item.update!(dismissed: true)
     Item.create!(source: "codex", external_id: "visible", title: "Visible item")
     get root_path, params: {hidden: "1", source: "github", q: "Real"}
     assert_select "article", count: 1
-    assert_select 'nav.source-tabs a[href*="q=Real"]', count: 5
-    assert_select 'nav.source-tabs a[href*="hidden=1"]', count: 5
+    assert_select 'nav.source-tabs a[href*="q=Real"]', count: 4
+    assert_select 'nav.source-tabs a[href*="hidden=1"]', count: 4
     get root_path, params: {q: "no-match"}
     assert_select ".empty p", text: "No items match these filters.", count: 3
   end
