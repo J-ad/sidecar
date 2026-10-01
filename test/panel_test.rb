@@ -150,6 +150,12 @@ class PanelTest < ActionDispatch::IntegrationTest
     assert_nil item.reload.facts["archived"]
   end
 
+  test "GitHub shows latest successful remote read at second precision" do
+    time = Time.utc(2026, 1, 1, 12, 30, 45)
+    SourceState.create!(source: "github", state: "ok", last_success_at: time)
+    get root_path, params: {source: "github"}
+    assert_select '.github-freshness', text: /Last successful remote read: 2026-01-01 12:30:45 UTC/
+  end
   test "stale GitHub evidence warns instead of claiming no work" do
     @item.destroy!
     SourceState.create!(source: "github", state: "unknown", last_success_at: 2.hours.ago, last_attempt_at: Time.current)

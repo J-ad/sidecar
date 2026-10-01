@@ -4,18 +4,20 @@ module PanelPolling
     return if @thread&.alive?
     @thread = Thread.new do
       loop do
+        started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         begin
           Rails.application.reloader.wrap do
             config = PanelConfig.new
-            LocalSessionSync.new(config).refresh
             GithubSync.new(config).refresh
+            LocalSessionSync.new(config).refresh
             SnapshotImporter.new(config).refresh
             LifecycleEvents.refresh(config)
           end
         rescue StandardError => e
           Rails.logger.warn("Sidecar polling iteration failed: #{e.class.name}")
         end
-        sleep 60
+        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+        sleep [60 - elapsed, 1].max
       end
     end
     @thread.name = "sidecar-local-polling"

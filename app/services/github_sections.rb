@@ -5,7 +5,7 @@ class GithubSections
       facts = item.facts
       key = if facts["merged"] == true
         "other"
-      elsif facts["bucket"] == "review_requested"
+      elsif facts["bucket"] == "review_requested" && facts["review_requested_for_viewer"] != false
         "review"
       elsif facts["bucket"] == "mine" && facts["draft"] == true
         "drafts"

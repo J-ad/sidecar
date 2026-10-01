@@ -76,6 +76,8 @@ Run `bin/sync-sessions` for an explicit refresh. The optional `bin/claude-event 
 
 ### GitHub
 
+When enabled, GitHub polls remotely every 60 seconds inside the Sidecar service even while the page is closed. The page shows the last successful remote read (including seconds). Discovery searches only configured repositories for your open authored PRs and current review requests; tracked requests and explicit production follow-ups receive direct reads, so an approval/removal cannot leave an old Review card behind. Current review requests take precedence over old reviews, including re-requests; resolved requests remain in history with local Todos and follow-ups intact. Reads are bounded and serialized. Errors back off from 60 seconds up to 15 minutes; a low reported rate budget defers reads until reset, and a rate-limit error without a reset time waits five minutes. Refresh requests a remote read, while respecting retry backoff. A future optional GitHub App webhook adapter could wake this same read/reconcile path through an approved public relay, with polling recovery for missed events; no app, relay or webhook grant is configured here.
+
 Map explicit repositories, then run:
 
 ```sh

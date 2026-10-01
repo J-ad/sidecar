@@ -28,6 +28,7 @@
       <% stale_actions = source == "github" && state&.last_success_at && state.last_success_at < 1.hour.ago %>
       <% if stale_actions && !failure %><div class="notice alert" role="status"><strong>Action evidence is stale</strong><p>Refresh GitHub to determine which PRs need you. Reimporting this snapshot does not renew its evidence.</p></div><% end %>
       <% if failure %><div class="notice alert" role="status"><strong>Sync unavailable</strong><p><%= state.message %></p></div><% end %>
+      <% if source == "github" %><p class="group-description github-freshness" role="status">GitHub <%= @config.settings.dig("sources", "github", "automatic") == true ? "polls remotely every 60 seconds while Sidecar runs" : "automatic polling is disabled" %>. Last successful remote read: <%= state&.last_success_at&.strftime("%Y-%m-%d %H:%M:%S UTC") || "not yet verified" %>. Errors and rate limits delay retries; prior evidence is retained.</p><% end %>
       <details class="source-details"><summary>Source details</summary>
         <p><%= state&.message || "No reader/export configured" %></p>
         <% if state&.last_success_at %><small>Last successful read: <%= state.last_success_at.strftime("%Y-%m-%d %H:%M UTC") %></small><% end %>

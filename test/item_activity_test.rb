@@ -35,6 +35,17 @@ class ItemActivityTest < ActiveSupport::TestCase
     assert_equal "Gates unverified", ItemActivity.for(item).label
     assert_not ItemActivity.for(item).needs_you?
   end
+  test "current GitHub requests override prior review and resolved or closed rows stop requesting action" do
+    item = row("review", "github", status: "open", facts: {"bucket" => "review_requested", "review_requested_for_viewer" => true, "viewer_review_state" => "APPROVED"})
+    assert ItemActivity.for(item).needs_you? # Explicit re-request remains pending.
+    item.update!(facts: item.facts.merge("review_requested_for_viewer" => false))
+    assert_not ItemActivity.for(item).needs_you?
+    assert_equal "Reviewed · no current request", ItemActivity.for(item).label
+    assert_empty GithubSections.group([item], {item.id => ItemActivity.for(item)})["review"]
+    item.update!(status: "closed", facts: {"bucket" => "mine", "ci" => "failure", "head_sha" => "new", "ci_sha" => "new"})
+    assert_equal "Closed", ItemActivity.for(item).label
+    assert_not ItemActivity.for(item).needs_you?
+  end
   test "source failure is health info, archive hides old error, explicit followup persists" do
     item = row("pr", "github", facts: {"bucket" => "mine", "head_sha" => "new", "ci_sha" => "new", "ci" => "failure"})
     state = SourceState.create!(source: "github", state: "unavailable")

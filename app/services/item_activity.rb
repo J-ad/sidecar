@@ -33,6 +33,11 @@ class ItemActivity
     @label, @action, @owner, @group, @priority, @reason = label, action, owner, group, priority, reason
   end
   def github
+    return set("Closed", "No tracked action", "Unassigned", "history", 85, "GitHub confirms this PR is closed") if @item.status == "closed"
+    if @facts["bucket"] == "review_resolved" || @facts["review_requested_for_viewer"] == false && @facts["bucket"] == "review_requested"
+      label = %w[APPROVED COMMENTED CHANGES_REQUESTED].include?(@facts["viewer_review_state"]) ? "Reviewed · no current request" : "No current review request"
+      return set(label, "No verified review action for you", "Unassigned", "history", 85, "GitHub current reviewer list no longer requests your review")
+    end
     if @facts["merged"] == true
       if @item.production_open?
         stage = Item::FOLLOWUP.keys.find { |key| @item.followup.dig(key, "done") != true }
