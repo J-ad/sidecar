@@ -7,6 +7,8 @@ class ItemActivity
   def initialize(item, source_state:, now:)
     @item, @facts, @now = item, item.facts, now
     @label, @action, @owner, @group, @priority, @reason = "History only", "No verified action for you", "Unassigned", "history", 90, "Runtime state is unverified"
+    @label = "Live state unknown" if %w[codex claude].include?(item.source) && @facts["history_read"] == true
+    @label, @action, @reason = "Status unknown", "Refresh GitHub to verify the next action", "Current PR evidence is stale or unavailable" if item.source == "github"
     return if item.source_archived?
     return github if item.source == "github" && item.production_open?
     return github if item.source == "github" && item.observed_at && item.observed_at >= now - 1.hour && source_state&.state != "unavailable"

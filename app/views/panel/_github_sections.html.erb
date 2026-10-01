@@ -1,0 +1,15 @@
+<% groups = GithubSections.group(rows, @activities) %>
+<% {"review" => "Review", "drafts" => "Draft PRs", "waiting" => "Waiting for review"}.each do |key, label| %>
+  <div class="github-subsection" data-github-group="<%= key %>" aria-labelledby="github-<%= key %>-heading">
+    <h3 class="group-heading" id="github-<%= key %>-heading"><%= label %> <span class="count"><%= groups[key].size %></span></h3>
+    <% if groups[key].empty? %><p class="group-empty">No matching imported PRs in this section.</p><% else %><%= render partial: "item", collection: groups[key], locals: {source: "github", state: state} %><% end %>
+  </div>
+<% end %>
+<% if groups["other"].any? %>
+  <div class="github-subsection" data-github-group="other" aria-labelledby="github-other-heading">
+    <h3 class="group-heading" id="github-other-heading">Other PRs &amp; follow-up <span class="count"><%= groups["other"].size %></span></h3>
+    <% current = groups["other"].reject { |item| @activities[item.id].group == "history" }; history = groups["other"] - current %>
+    <%= render partial: "item", collection: current, locals: {source: "github", state: state} %>
+    <% if history.any? %><details class="history-group"><summary>Merged / unverified · <%= history.size %></summary><%= render partial: "item", collection: history, locals: {source: "github", state: state} %></details><% end %>
+  </div>
+<% end %>

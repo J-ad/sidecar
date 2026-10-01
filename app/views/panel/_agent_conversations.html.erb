@@ -1,0 +1,7 @@
+<% attention = rows.select { |item| @activities[item.id].needs_you? }; progress = rows.select { |item| @activities[item.id].group == "progress" }; history = rows.select { |item| @activities[item.id].group == "history" }.sort_by { |item| [-(item.source_updated_at || Time.at(0)).to_f, -item.id] }; recent = history.first(3); earlier = history.drop(3) %>
+<% if attention.any? %><h3 class="group-heading">Needs you · <%= attention.size %></h3><%= render partial: "item", collection: attention, locals: {source: source, state: state} %><% end %>
+<% if progress.any? %><h3 class="group-heading">Working / waiting · <%= progress.size %></h3><%= render partial: "item", collection: progress, locals: {source: source, state: state} %><% end %>
+<% if recent.any? %>
+  <div class="recent-conversations"><h3 class="group-heading">Recent conversations · <%= recent.size %></h3><p class="group-description">Most recently updated imported sessions. Live state may be unknown; recency does not prove a session is active.</p><%= render partial: "item", collection: recent, locals: {source: source, state: state} %></div>
+<% end %>
+<% if earlier.any? %><details class="history-group"><summary>More conversations · <%= earlier.size %></summary><%= render partial: "item", collection: earlier, locals: {source: source, state: state} %></details><% end %>

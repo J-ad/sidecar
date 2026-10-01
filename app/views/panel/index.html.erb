@@ -18,7 +18,7 @@
     <% end %>
   </nav>
   <main class="sections <%= 'focused' if @source %>">
-  <% { "codex" => ["01", "Codex", "Threads and summaries"], "claude" => ["02", "Claude Code", "Sessions from Claude Desktop"], "github" => ["03", "GitHub", "My PRs and requested reviews"] }.each do |source, labels| %>
+  <% { "codex" => ["01", "Codex", "Threads and summaries"], "claude" => ["02", "Claude Code", "Imported Claude conversations"], "github" => ["03", "GitHub", "My PRs and requested reviews"] }.each do |source, labels| %>
     <% next if @source && @source != source %>
     <% state = @states[source]; rows = @items.select { |i| i.source == source }; stale = state&.last_success_at && state.last_success_at < @config.stale_hours.hours.ago %>
     <section class="section" id="<%= source %>" aria-label="<%= labels[1] %>">
@@ -34,12 +34,12 @@
         <% if state&.last_attempt_at %><small>Last import attempt: <%= state.last_attempt_at.strftime("%Y-%m-%d %H:%M UTC") %></small><% end %>
         <p>History readers do not verify live Desktop state. Unknown archive state is not inferred from age.</p>
       </details>
-      <% if rows.empty? %><div class="empty"><span>—</span><p><%= params[:q].present? || params[:project].present? || params[:hidden] == '1' ? "No items match these filters." : state&.state == 'ok' ? "No items in this snapshot." : "No available items. This does not confirm there is no work." %></p></div><% end %>
-      <% if source == "github" && rows.any? %><div class="buckets"><span>My PRs: <%= rows.count { |r| r.facts["bucket"] == "mine" } %></span><span>Requested reviews: <%= rows.count { |r| r.facts["bucket"] == "review_requested" } %></span></div><% end %>
-      <% attention = rows.select { |item| @activities[item.id].needs_you? }; progress = rows.select { |item| @activities[item.id].group == "progress" }; history = rows.select { |item| @activities[item.id].group == "history" } %>
-      <% if attention.any? %><h3 class="group-heading">Needs you · <%= attention.size %></h3><%= render partial: "item", collection: attention, locals: {source: source, state: state} %><% end %>
-      <% if progress.any? %><h3 class="group-heading">Working / waiting · <%= progress.size %></h3><%= render partial: "item", collection: progress, locals: {source: source, state: state} %><% end %>
-      <% if history.any? %><details class="history-group"><summary>History / unverified · <%= history.size %></summary><%= render partial: "item", collection: history, locals: {source: source, state: state} %></details><% end %>
+      <% if rows.empty? && source != "github" %><div class="empty"><span>—</span><p><%= params[:q].present? || params[:project].present? || params[:hidden] == '1' ? "No items match these filters." : state&.state == 'ok' ? "No items in this snapshot." : "No available items. This does not confirm there is no work." %></p></div><% end %>
+      <% if source == "github" %>
+        <%= render "github_sections", rows: rows, state: state %>
+      <% else %>
+        <%= render "agent_conversations", rows: rows, source: source, state: state %>
+      <% end %>
     </section>
   <% end %>
   </main>

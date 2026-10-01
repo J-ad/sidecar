@@ -44,7 +44,7 @@ class PanelTest < ActionDispatch::IntegrationTest
     assert_select 'nav.source-tabs a[href*="q=Real"]', count: 4
     assert_select 'nav.source-tabs a[href*="hidden=1"]', count: 4
     get root_path, params: {q: "no-match"}
-    assert_select ".empty p", text: "No items match these filters.", count: 3
+    assert_select ".empty p", text: "No items match these filters.", count: 2
   end
   test "production confirmation requires explicit evidence" do
     patch item_path(@item), params: {operation: "followup", key: "deployed", done: "1", evidence: ""}
@@ -109,11 +109,12 @@ class PanelTest < ActionDispatch::IntegrationTest
       assert_equal attempted_at, state.reload.last_attempt_at
   end
 
-  test "history is collapsed and only grounded actions count as needs-you" do
+  test "recent conversations stay visible and only grounded actions count as needs-you" do
     @item.destroy!
     row("history", "claude", facts: {"agent_finished" => true})
     get root_path
-    assert_select 'details.history-group:not([open])', count: 1
+    assert_select '#claude .recent-conversations article', count: 1
+    assert_select '#claude details.history-group', count: 0
     assert_select '.group-heading', text: /Needs you/, count: 0
     assert_select 'header p', text: /No actions confirmed yet/
     assert_select '.source-details', count: 3
