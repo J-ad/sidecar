@@ -38,7 +38,8 @@ class TodosController < ApplicationController
 
   def complete
     @todo.update!(completed_at: Time.current)
-    redirect_to @todo, notice: "Todo completed.", status: :see_other
+    destination = params[:return_to] == "dashboard" ? root_path(params.permit(:source, :project, :q, :hidden).to_h) : todo_path(@todo)
+    redirect_to destination, notice: "Todo completed.", status: :see_other
   end
 
   def reopen

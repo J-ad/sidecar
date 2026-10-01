@@ -10,9 +10,9 @@
       <% if request.secret? %><p>Sensitive question: answer directly in the original agent. No secret reply form or suggestions are available.</p>
       <% else %>
         <% backend = HeadlessDraft.new.backend %>
-        <details class="suggestion-panel" data-suggestion-url="<%= question_suggestion_path(request) %>" data-cancel-url="<%= cancel_question_suggestion_path(request) %>"><summary>AI reply draft · <%= backend == 'codex' ? 'Codex' : 'Claude first → Codex fallback' %></summary>
+        <details class="suggestion-panel" data-suggestion-url="<%= question_suggestion_path(request) %>" data-cancel-url="<%= cancel_question_suggestion_path(request) %>"><summary>AI reply draft · Claude first · Codex fallback blocked</summary>
           <p>Generate sends only this question/options and the context you enter below to the existing CLI provider. It uses your logged-in account and subscription limits; it is not offline.</p>
-          <p>Claude uses an empty tool list, no MCP tools, safe/restricted mode and no session persistence. Codex uses an empty temporary directory, read-only, with shell, apps, plugins, hooks, memory and web search disabled; complete tool removal is not guaranteed by this CLI. One fallback is allowed for ordinary failures, never access/safety restrictions.</p>
+          <p>Claude uses an empty tool list, no MCP tools, safe/restricted mode, a minimal runtime environment and no session persistence. Codex fallback is configured but blocked: this CLI has no verified tool-free drafting mode. No fallback bypasses access or safety restrictions.</p>
           <label for="draft-context-<%= request.id %>">Optional relevant context (up to 2,000 characters)</label><%= text_area_tag :context, nil, id: "draft-context-#{request.id}", data: {draft_context: true}, maxlength: 2000, disabled: !@broker.routable?(request) %>
           <button type="button" data-generate-draft <%= 'disabled' unless @broker.routable?(request) %>>Generate suggestion</button>
           <button type="button" data-cancel-draft hidden>Cancel generation</button>

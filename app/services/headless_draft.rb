@@ -13,6 +13,10 @@ class HeadlessDraft
     end
   end
   attr_reader :pid, :provider_used, :fallback_used
+  RUNTIME_ENV = %w[HOME PATH LANG LC_ALL LC_CTYPE TMPDIR XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME CLAUDE_CONFIG_DIR CODEX_HOME].freeze
+  def self.environment(source = ENV)
+    source.to_h.slice(*RUNTIME_ENV)
+  end
   def initialize(config = PanelConfig.new)
     @settings = config.settings.fetch("suggestions", {})
     @lock = Mutex.new
@@ -55,18 +59,23 @@ class HeadlessDraft
         @fallback_used = index > 0
         return answers
       rescue Failure => e
-        raise if cancelled? || !e.fallback_allowed? || index == providers.size - 1
+        raise Failure, "Suggestion cancelled" if cancelled?
+        raise if !e.fallback_allowed? || index == providers.size - 1
       end
     end
   end
   def call_once(provider, prompt, schema_data, ids)
+    if provider == "codex"
+      raise Failure, "Codex fallback disabled: this CLI has no verified tool-free drafting mode. No Codex model call was made."
+    end
+    verify_claude_login!
     output = nil
     Dir.mktmpdir("sidecar-draft-") do |directory|
       schema = File.join(directory, "schema.json")
       File.write(schema, JSON.generate(schema_data), perm: 0600)
       # Saved CLI login is used by the CLI itself; Sidecar never reads credentials.
-      env = {"CODEX_API_KEY" => nil, "OPENAI_API_KEY" => nil, "OPENAI_BASE_URL" => nil, "ANTHROPIC_API_KEY" => nil, "ANTHROPIC_AUTH_TOKEN" => nil, "ANTHROPIC_BASE_URL" => nil}
-      Open3.popen3(env, *command(directory, schema, provider: provider), chdir: directory, pgroup: true) do |stdin, stdout, stderr, waiter|
+      env = self.class.environment
+      Open3.popen3(env, *command(directory, schema, provider: provider), chdir: directory, pgroup: true, unsetenv_others: true) do |stdin, stdout, stderr, waiter|
         @lock.synchronize { @pid = waiter.pid }
         terminate if cancelled?
         drains = [stdout, stderr].map do |stream|
@@ -115,6 +124,28 @@ class HeadlessDraft
     terminate
   end
   private
+  def verify_claude_login!
+    output = nil
+    Open3.popen3(self.class.environment, @settings.fetch("claude_binary", "claude"), "--safe-mode", "--restricted", "auth", "status", pgroup: true, unsetenv_others: true) do |stdin, stdout, stderr, waiter|
+      stdin.close
+      @lock.synchronize { @pid = waiter.pid }
+      drain = Thread.new { stderr.read(8193) }
+      begin
+        terminate if cancelled?
+        success = Timeout.timeout(5) { output = stdout.read(8193); waiter.value.success? }
+        raise Failure.new("Claude CLI login is unavailable. Log in through its own CLI; Sidecar does not create credentials.", kind: :unavailable) unless success && output.bytesize <= 8192 && JSON.parse(output)["loggedIn"] == true
+      rescue Timeout::Error
+        raise Failure.new("Claude login check timed out; no model call was made.", kind: :unavailable)
+      ensure
+        terminate if waiter.alive?
+        drain.kill if drain.alive?
+        @lock.synchronize { @pid = nil }
+      end
+    end
+    raise Failure, "Suggestion cancelled" if cancelled?
+  rescue JSON::ParserError, Errno::ENOENT
+    raise Failure.new("Claude CLI login is unavailable; no model call was made.", kind: :unavailable)
+  end
   def cancelled?
     @lock.synchronize { @cancelled }
   end

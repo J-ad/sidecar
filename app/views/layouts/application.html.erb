@@ -5,10 +5,12 @@
     <meta name="panel-revision" content="<%= @revision %>">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#203d31">
+    <meta name="turbo-cache-control" content="no-cache">
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="apple-touch-icon" href="/icons/sidecar-192.png">
     <%= csrf_meta_tags %>
     <link rel="stylesheet" href="/panel.css">
+    <link rel="stylesheet" href="/todo-sidebar.css">
     <% if controller_name == "todos" %>
       <link rel="stylesheet" href="/trix.css">
       <link rel="stylesheet" href="/todos.css">
@@ -21,6 +23,9 @@
     <% if @automatic_sessions %><script src="/auto-refresh.js" defer></script><% end %>
   </head>
   <body>
-    <%= yield %>
+    <div class="app-layout">
+      <div class="app-main"><%= yield %></div>
+      <%= render "shared/todo_sidebar" %>
+    </div>
   </body>
 </html>

@@ -1,0 +1,32 @@
+<% sidebar_todos = Todo.where(completed_at: nil).order(updated_at: :desc, id: :desc).to_a; sidebar_config = @config || PanelConfig.new %>
+<aside class="todo-sidebar" aria-labelledby="todo-sidebar-heading">
+  <div class="todo-sidebar-header">
+    <div><span class="eyebrow">YOUR STICKY NOTES</span><h2 id="todo-sidebar-heading">Todos <span class="count"><%= sidebar_todos.size %></span></h2></div>
+    <%= link_to "+ Add todo", new_todo_path, class: "todo-quick-add" %>
+  </div>
+  <p class="todo-sidebar-intro">Your open tasks, across all sources and projects.</p>
+  <div class="todo-sidebar-scroll" tabindex="0" aria-label="Open Todo notes">
+    <% if sidebar_todos.empty? %>
+      <div class="sticky-note todo-sidebar-empty"><h3>A place for what’s next.</h3><p>Add your own task or use “Add todo” on a source item.</p><%= link_to "Create your first todo", new_todo_path %></div>
+    <% end %>
+    <% sidebar_todos.each do |todo| %>
+      <% project = sidebar_config.projects.find { |p| p["id"] == todo.project_id } %>
+      <article class="sticky-note" id="sidebar-todo-<%= todo.id %>">
+        <div class="sticky-note-meta"><span class="project" style="--project-color:<%= sidebar_config.color(project) %>"><%= project&.fetch("name") || todo.project_id.presence || "No project" %></span><span><%= todo.origin_source&.capitalize || "Custom" %></span></div>
+        <h3><%= link_to todo.title, todo_path(todo) %></h3>
+        <% if todo.checklist.any? %>
+          <ul class="sticky-checklist"><% todo.checklist.first(3).each do |entry| %><li class="<%= 'done' if entry['done'] %>"><span aria-label="<%= entry['done'] ? 'Done' : 'Open' %>"><%= entry['done'] ? '✓' : '○' %></span><%= entry["label"] %></li><% end %></ul>
+          <small><%= todo.checklist.count { |entry| entry['done'] } %>/<%= todo.checklist.size %> checklist tasks done</small>
+        <% end %>
+        <div class="sticky-note-actions">
+          <%= link_to "Open notes", todo_path(todo) %>
+          <% if Todo.safe_link(todo.source_link) %><%= link_to "Source ↗", todo.source_link, target: "_blank", rel: "noopener noreferrer" %><% end %>
+          <% if controller_name == 'panel' && action_name == 'index' %>
+            <%= button_to "Complete", complete_todo_path(todo), method: :patch, params: {return_to: "dashboard", source: params[:source], project: params[:project], q: params[:q], hidden: params[:hidden]}, aria: {label: "Complete todo: #{todo.title}"} %>
+          <% end %>
+        </div>
+      </article>
+    <% end %>
+  </div>
+  <%= link_to "All todos & completed tasks →", todos_path, class: "todo-sidebar-all" %>
+</aside>
