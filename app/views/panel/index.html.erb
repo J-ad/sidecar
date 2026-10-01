@@ -43,5 +43,5 @@
     </section>
   <% end %>
   </main>
-  <footer><% if @automatic_sessions %>Configured agent histories poll every 60 seconds while the server runs, even with the browser closed. This page checks for changes every 10 seconds; open forms/details pause updates. Live agent state may remain unknown.<br><% end %>Corrections, snooze and checklists are stored locally in SQLite. Dismissing an item does not mark the task complete.<br>Threads stay independent. No AI model calls.</footer>
+  <footer><% if @automatic_sessions %>Configured agent histories poll every 60 seconds while the server runs, even with the browser closed. This page checks for changes every 10 seconds; open forms/details pause updates. Live agent state may remain unknown.<br><% end %>Corrections, snooze and checklists are stored locally in SQLite. Dismissing an item does not mark the task complete.<br>Threads stay independent. Source reads do not call models. AI reply drafts run only when you click Generate.</footer>
 </div>

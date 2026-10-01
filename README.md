@@ -1,6 +1,6 @@
 # Sidecar
 
-A small local work dashboard for **Codex, Claude Code, and GitHub**. Rails + SQLite + Hotwire, with a little plain JavaScript. No TypeScript, Node application runtime, external model calls, or automatic thread merging.
+A small local work dashboard for **Codex, Claude Code, and GitHub**. Rails + SQLite + Hotwire, with a little plain JavaScript. No TypeScript, Node application runtime or automatic thread merging. Optional click-to-generate AI reply drafts use an existing agent CLI login.
 
 Sidecar keeps each source independent. Cards show a title, project/color, source status, next action, observation time, source evidence and a link or session identity where available. Search and source/project filters make the list smaller. Snooze, dismissal and manual corrections stay local. An agent finishing a response does **not** mark a task complete.
 
@@ -142,10 +142,10 @@ GitHub facts include `bucket` (`mine` / `review_requested`), `merged`, `head_sha
 bundle exec rails test
 bundle exec rails zeitwerk:check
 # Optional developer check; Node is not needed to run Sidecar:
-node --test test/auto_refresh_test.js test/pwa_test.js
+node --test test/auto_refresh_test.js test/pwa_test.js test/question_suggestions_test.js
 ```
 
-Current release checks passed: 41 Rails tests / 213 assertions, nine client tests, Rails loading and HTTP rendering. Tests use separate `storage/test.sqlite3`. They cover atomic/partial imports, timestamps, failed-reader retention, explicit reader scope/cooldown, overlays, production evidence, review/CI rules, archive semantics, source/project/search filters, hidden views, revision reporting and CSRF. Client tests cover blurred drafts, asynchronous races, source navigation and untouched forms. macOS runtime and real local readers were tested. Linux lockfile platforms and portable setup paths are included; **Linux runtime tests have not been run**. HTTP checks are distinct from visual browser QA.
+Current release checks passed: 50 Rails tests, eleven client tests, Rails loading and HTTP rendering. Tests use separate `storage/test.sqlite3`. They cover atomic/partial imports, timestamps, failed-reader retention, explicit reader scope/cooldown, overlays, production evidence, review/CI rules, archive semantics, source/project/search filters, hidden views, revision reporting and CSRF. Client tests cover blurred drafts, asynchronous races, source navigation and untouched forms. macOS runtime and real local readers were tested. Linux lockfile platforms and portable setup paths are included; **Linux runtime tests have not been run**. HTTP checks are distinct from visual browser QA.
 
 An agent can follow [the packaged setup/maintenance skill](skills/sidecar/SKILL.md). It resolves the checkout, checks prerequisites, installs locally, configures one source at a time and verifies honest coverage. The skill is not globally installed automatically; a separately installed copy needs the checkout location to find this README.
 
@@ -161,7 +161,7 @@ The English interface has All sources, Codex, Claude Code and GitHub buttons. Ea
 
 ### Agent questions
 
-The Agent questions page includes a guarded local request broker. A runtime integration must supply the actual owning connection before a question can be answered. Existing Desktop history readers do not provide that connection; replies remain disabled. Only explicit user-input requests are supported, never tool or permission approvals. Secret questions hand off to the original agent. Disconnected, expired or resolved requests cannot be sent, and uncertain deliveries are not retried automatically. No LLM suggestions or model calls are enabled.
+The Agent questions page includes a guarded local request broker. A runtime integration must supply the actual owning connection before a question can be answered. Existing Desktop history readers do not provide that connection; replies remain disabled. Only explicit user-input requests are supported, never tool or permission approvals. Secret questions hand off to the original agent. Disconnected, expired or resolved requests cannot be sent, and uncertain deliveries are not retried automatically. AI suggestions are separate editable drafts, generated only after an explicit click for a verified pending non-secret request. They never send answers automatically.
 
 ## Install the app and login startup
 
@@ -181,3 +181,25 @@ bin/service uninstall
 On macOS this generates a per-user `com.sidecar.local` LaunchAgent and starts it immediately, then at login. On Linux it generates a user `sidecar.service` systemd unit and enables it at login; systemd user services must be available. No root privileges or lingering are enabled. Linux execution is not tested. Generated files include the actual checkout/Ruby paths and stay outside Git. Moving the checkout or Ruby installation requires uninstalling and reinstalling the service.
 
 Installation refuses to overwrite an existing service or use an occupied port. Stop only an identified existing Sidecar server before installation; never kill another application. `PORT` is configurable (1024–65535), binds only `127.0.0.1`, and the service uses the chosen port on every restart. Logs are local under `log/service.out.log` and `log/service.err.log` on macOS; on Linux use `journalctl --user -u sidecar.service`. Uninstalling stops only the installed service and preserves config, snapshots and SQLite.
+
+### Headless reply suggestions
+
+Default order: **Claude Code first, then Codex once** for ordinary authentication, quota, network, process or invalid-output failures. No fallback follows cancellation, secret input, access denial or safety restrictions. Each provider has a 30-second timeout; the two-attempt path is bounded to about 60 seconds. The draft identifies its actual provider and whether it was a fallback. Duplicate generation for a question is suppressed; cancellation kills only the dedicated drafting process group. Resolving/expiring/disconnecting the question discards its draft.
+
+`Generate suggestion` sends only the exact question/options and optional user-entered relevant context (2,000 characters, 10 KB total). No session history, repo files or automatic context collection is added. The CLI uses its own existing login; Sidecar does not inspect/copy credentials, create API keys or use inherited API-key/provider-URL overrides. Model execution uses the provider cloud and existing subscription limits, not offline inference. Raw stderr is never persisted or displayed. Drafts stay in ignored local SQLite. The `Use draft` button fills empty reply fields only; edit and explicitly `Send reply` separately.
+
+```yaml
+suggestions:
+  backend: claude
+  fallback: codex
+  claude_binary: claude
+  codex_binary: codex
+```
+
+Check login with `claude auth status` or `codex login status` in your own terminal. Login is a separate user action, not performed by Sidecar. Binaries must support the flags used below; unsupported options fail closed rather than silently granting tools.
+
+Claude uses [documented CLI flags](https://code.claude.com/docs/en/cli-reference): safe/restricted mode, an empty built-in tool list, denied MCP tools with an empty strict MCP configuration, disabled skills/hooks and no session persistence. Authentication remains available; `--bare` is deliberately avoided because it does not reuse subscription OAuth. Managed administrator policy remains authoritative.
+
+Codex uses [non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode) in a temporary directory with `--no-daemon`, `--ephemeral`, ignored user config/rules, a read-only sandbox, no approvals, disabled shell/apps/plugins/hooks/memory/skills/multi-agent/web search, and no AGENTS.md bytes. Existing auth remains with the CLI. **The installed Codex CLI does not expose a verified switch removing every built-in tool.** This is the strongest supported isolation used here, not a claim of tool-free Codex. Set `fallback: null` if that capability gap is unacceptable.
+
+Tests use a fake CLI and generic questions. No paid generation or private prompt transmission is performed by verification. A live suggestion remains untested until the user clicks Generate on a verified pending question. External Desktop reply routing is still unavailable without its owning connection; generating a fresh drafting session never answers the original session by itself.

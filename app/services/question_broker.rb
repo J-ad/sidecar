@@ -2,7 +2,7 @@ require "monitor"
 require "securerandom"
 class QuestionBroker
   def self.instance
-    Rails.application.config.x.question_broker ||= new
+    Rails.application.config.x.sidecar.question_broker ||= new
   end
   def initialize
     @connections = {}

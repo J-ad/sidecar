@@ -21,3 +21,11 @@ sources:
     automatic: false # existing gh auth; read-only polling every 5 minutes
 # A read-only connector/approved existing summary producer writes these files.
 # The web UI imports exact paths; optional Claude SDK reads only configured projects.
+
+# Generates only when the user clicks Generate on a verified pending question.
+# Uses the existing CLI login; no API keys or secrets belong here.
+suggestions:
+  backend: claude # Claude first; existing CLI login, no new API keys
+  fallback: codex # one attempt; never bypasses access/safety restrictions
+  codex_binary: codex
+  claude_binary: claude

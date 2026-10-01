@@ -18,7 +18,7 @@ class LocalSessionSync
   end
   def refresh_source(source, force:)
     FileUtils.mkdir_p(Rails.root.join("tmp"))
-    File.open(Rails.root.join("tmp", "#{source}-sync.lock"), "w") do |lock|
+    File.open(Rails.root.join("tmp", "#{Rails.env}-#{source}-sync.lock"), "w") do |lock|
       return unless lock.flock(File::LOCK_EX | File::LOCK_NB)
       state = SourceState.find_by(source: source)
       return if !force && state&.last_attempt_at && state.last_attempt_at > 60.seconds.ago

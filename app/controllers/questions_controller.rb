@@ -12,4 +12,17 @@ class QuestionsController < ApplicationController
   rescue ArgumentError, ActionController::ParameterMissing => e
     redirect_to questions_path, alert: e.message, status: :see_other
   end
+  def suggest
+    started = QuestionSuggestions.instance.start(AgentQuestion.find(params[:id]), context: params[:context].to_s.first(2000))
+    render json: {state: "running", started: started}, status: :accepted
+  rescue ArgumentError => e
+    render json: {state: "unavailable", message: e.message}, status: :unprocessable_entity
+  end
+  def suggestion_status
+    render json: QuestionSuggestions.instance.status(AgentQuestion.find(params[:id]))
+  end
+  def cancel_suggestion
+    QuestionSuggestions.instance.cancel(AgentQuestion.find(params[:id]))
+    render json: {state: "cancelled", message: "Cancelled. No reply was sent."}
+  end
 end

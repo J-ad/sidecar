@@ -11,12 +11,17 @@ class QuestionsTest < ActionDispatch::IntegrationTest
     row = AgentQuestion.create!(connection_id: "offline", thread_id: "thread", turn_id: "turn", item_id: "item", rpc_id_json: "17", questions: [{"id" => "q", "question" => "Which approach?"}])
     get questions_path
     assert_select 'input[value="Send reply"][disabled]'
+    assert_select 'button[data-generate-draft][disabled]'
+    post question_suggestion_path(row), params: {context: "Generic context"}
+    assert_response :unprocessable_entity
+    assert_equal "idle", row.reload.suggestion_state
     post question_reply_path(row), params: {answers: {q: "Answer"}}
     assert_response :see_other
     assert_equal "pending", row.reload.state
     row.update!(questions: [{"id" => "secret", "isSecret" => true}])
     get questions_path
     assert_select 'textarea', count: 0
+    assert_select '.suggestion-panel', count: 0
     assert_select 'p', text: /Sensitive question: answer directly/
   end
 end

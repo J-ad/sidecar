@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_01_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_01_113000) do
   create_table "agent_questions", force: :cascade do |t|
     t.string "connection_id", null: false
     t.datetime "created_at", null: false
@@ -19,6 +19,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_01_110000) do
     t.json "questions", default: [], null: false
     t.string "rpc_id_json", null: false
     t.string "state", default: "pending", null: false
+    t.json "suggestion_answers", default: {}, null: false
+    t.string "suggestion_message"
+    t.string "suggestion_state", default: "idle", null: false
     t.string "thread_id", null: false
     t.string "turn_id", null: false
     t.datetime "updated_at", null: false

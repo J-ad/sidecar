@@ -8,7 +8,7 @@ class GithubSync
     path = @config.source_path("github")
     return unless path
     return if !force && recent_snapshot?(path)
-    File.open(Rails.root.join("tmp/github-sync.lock"), "w") do |lock|
+    File.open(Rails.root.join("tmp", "#{Rails.env}-github-sync.lock"), "w") do |lock|
       return unless lock.flock(File::LOCK_EX | File::LOCK_NB)
       begin
         data = @collector.collect(@config.projects.flat_map { |p| Array(p["repositories"]) }.uniq)
