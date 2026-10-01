@@ -142,10 +142,10 @@ GitHub facts include `bucket` (`mine` / `review_requested`), `merged`, `head_sha
 bundle exec rails test
 bundle exec rails zeitwerk:check
 # Optional developer check; Node is not needed to run Sidecar:
-node --test test/auto_refresh_test.js test/pwa_test.js test/question_suggestions_test.js
+node --test test/auto_refresh_test.js test/pwa_test.js test/question_suggestions_test.js test/todos_client_test.js
 ```
 
-Current release checks passed: 50 Rails tests, eleven client tests, Rails loading and HTTP rendering. Tests use separate `storage/test.sqlite3`. They cover atomic/partial imports, timestamps, failed-reader retention, explicit reader scope/cooldown, overlays, production evidence, review/CI rules, archive semantics, source/project/search filters, hidden views, revision reporting and CSRF. Client tests cover blurred drafts, asynchronous races, source navigation and untouched forms. macOS runtime and real local readers were tested. Linux lockfile platforms and portable setup paths are included; **Linux runtime tests have not been run**. HTTP checks are distinct from visual browser QA.
+Current release checks passed: 58 Rails tests / 413 assertions, fifteen client tests, Rails loading and HTTP rendering. Tests use separate `storage/test.sqlite3`. They cover atomic/partial imports, timestamps, failed-reader retention, explicit reader scope/cooldown, overlays, production evidence, review/CI rules, archive semantics, source/project/search filters, hidden views, revision reporting and CSRF. Client tests cover blurred drafts, asynchronous races, source navigation and untouched forms. macOS runtime and real local readers were tested. Linux lockfile platforms and portable setup paths are included; **Linux runtime tests have not been run**. HTTP checks are distinct from visual browser QA.
 
 An agent can follow [the packaged setup/maintenance skill](skills/sidecar/SKILL.md). It resolves the checkout, checks prerequisites, installs locally, configures one source at a time and verifies honest coverage. The skill is not globally installed automatically; a separately installed copy needs the checkout location to find this README.
 

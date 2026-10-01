@@ -1,6 +1,7 @@
 class PanelConfig
   attr_reader :settings
-  def initialize(path = Rails.root.join("config/panel.yml"))
+  def initialize(path = nil)
+    path ||= Rails.root.join(Rails.env.test? ? "config/panel.example.yml" : "config/panel.yml")
     @settings = YAML.safe_load(File.read(File.exist?(path) ? path : Rails.root.join("config/panel.example.yml")))
   end
   def projects
