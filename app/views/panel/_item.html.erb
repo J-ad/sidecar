@@ -1,0 +1,30 @@
+        <% activity = @activities.fetch(item.id); project = @config.projects.find { |p| p["id"] == item.display(:project_id) } %>
+        <article class="item" id="item-<%= item.id %>">
+          <div class="item-meta"><span class="project" style="--project-color:<%= @config.color(project) %>"><%= project&.fetch("name") || "No project" %></span><span class="status"><%= activity.label %></span></div>
+          <h3><% if item.safe_url %><%= link_to item.display(:title), item.safe_url, target: "_blank", rel: "noopener noreferrer" %><% else %><%= item.display(:title) %><% end %></h3>
+          <% if item.stale?(@config.stale_hours) %><p class="warning">⚠ <%= item.missing_from_snapshot ? "Missing from the latest complete snapshot — check the source" : "Stale data or observation time unknown" %></p><% end %>
+          <% if item.overrides.any? %><small class="manual">Manual correction · source preserved</small><% end %>
+          <% if source == "claude" %><details class="session-identity"><summary>Session ID · open Claude by title</summary><code><%= item.external_id %></code> <button type="button" data-copy-session="<%= item.external_id %>">Copy session ID</button><p>No verified Desktop deep link is available. This ID does not resume or execute a session.</p></details><% end %>
+          <% if source == "github" %><details class="technical"><summary>PR details</summary><p class="facts"><%= item.facts["bucket"] == "mine" ? "My PR" : "Review requested from me" %> · Merge: <%= item.facts["merged"] == true ? "yes" : item.facts["merged"] == false ? "no" : "?" %> · Conflicts: <%= item.facts["conflicts"] == true ? "yes" : item.facts["conflicts"] == false ? "no" : "?" %><br>HEAD CI: <%= item.facts["head_sha"].present? && item.facts["ci_sha"] == item.facts["head_sha"] ? item.facts.fetch("ci", "unknown") : "unknown" %> · Review: <%= Array(item.facts["requested_reviewers"]).join(", ").presence || "check history" %></p></details><% end %>
+          <div class="next <%= activity.needs_you? ? "attention" : "neutral" %>"><span><%= activity.owner == "You" ? "YOUR NEXT ACTION" : "NEXT · #{activity.owner.upcase}" %></span><p><%= activity.action %></p><small><%= activity.reason %></small></div>
+          <div class="updated">Last activity: <%= item.source_updated_at&.strftime("%d.%m %H:%M UTC") || "unknown" %></div>
+          <% if item.evidence.present? %><details class="evidence"><summary>Evidence / source summary</summary><p><%= item.evidence %></p></details><% end %>
+          <% if source == "github" && item.facts["merged"] == true %>
+            <details class="production" <%= "open" if item.production_open? %>><summary>After merge · separate confirmations</summary>
+              <% unless item.production_open? %><%= button_to "Track production follow-up", item_path(item, source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), method: :patch, params: {operation: "track_followup"} %><% end %>
+              <% Item::FOLLOWUP.each do |key, label| %><%= form_with url: item_path(item, source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), method: :patch do |f| %>
+                <%= f.hidden_field :operation, value: "followup" %><%= f.hidden_field :key, value: key %>
+                <label><%= f.check_box :done, checked: item.followup.dig(key, "done") == true %> <%= label %></label>
+                <%= f.text_field :evidence, value: item.followup.dig(key, "evidence"), placeholder: "Evidence: link, time, result or “not applicable”", aria: { label: "Evidence: #{label}" } %><%= f.submit "Save stage" %>
+              <% end %><% end %>
+            </details>
+          <% end %>
+          <details class="correction"><summary>Manual correction</summary><%= form_with url: item_path(item, source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), method: :patch, scope: :correction do |f| %>
+            <input type="hidden" name="operation" value="correct">
+            <%= f.label :title, "Title" %><%= f.text_field :title, value: item.display(:title), required: true %>
+            <%= f.label :project_id, "Project" %><%= f.select :project_id, [["No project", ""]] + @config.projects.map { |p| [p["name"], p["id"]] }, selected: item.display(:project_id) %>
+            <%= f.label :status, "Local status" %><%= f.text_field :status, value: item.display(:status) %>
+            <%= f.label :next_action, "Next action" %><%= f.text_area :next_action, value: item.display(:next_action) %><%= f.submit "Save correction" %>
+          <% end %><%= button_to "Restore source values", item_path(item, source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), method: :patch, params: { operation: "clear_overrides" } %></details>
+          <div class="item-actions"><% if item.hidden? %><%= button_to "Restore", item_path(item, source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), method: :patch, params: { operation: "restore" } %><% else %><%= button_to "Snooze 24h", item_path(item, source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), method: :patch, params: { operation: "snooze" } %><%= button_to "Dismiss locally", item_path(item, source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), method: :patch, params: { operation: "dismiss" } %><% end %><% if item.safe_url %><%= link_to "Source ↗", item.safe_url, target: "_blank", rel: "noopener noreferrer" %><% end %></div>
+        </article>

@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+"${PYTHON:-python3}" -m venv vendor/claude-sdk
+PIP_CACHE_DIR="$PWD/vendor/pip-cache" vendor/claude-sdk/bin/pip install -r requirements-sessions.txt
+printf '%s\n' 'SDK ready. Configure exact project local_paths and sources.claude.automatic: true.'

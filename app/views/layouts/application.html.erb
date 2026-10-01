@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Sidecar · local workspace</title>
+    <meta name="panel-revision" content="<%= @revision %>">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <link rel="stylesheet" href="/panel.css">
+    <script type="module" src="/turbo.js"></script>
+    <script src="/session-actions.js" defer></script>
+    <% if @automatic_sessions %><script src="/auto-refresh.js" defer></script><% end %>
+  </head>
+  <body>
+    <%= yield %>
+  </body>
+</html>

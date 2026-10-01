@@ -1,0 +1,47 @@
+<div class="shell">
+  <header>
+    <div><div class="eyebrow">SIDECAR · YOUR LOCAL WORKSPACE</div><h1>What’s next<span class="dot">?</span></h1><p><% if @needs_you > 0 %><%= @needs_you %> confirmed actions need you.<% elsif @action_coverage_incomplete %>No actions confirmed yet · status coverage incomplete.<% else %>No actions need you in the current verified data.<% end %></p></div>
+    <div class="header-actions"><span class="local">● Only on this computer</span><%= button_to "Refresh sources ↻", refresh_path(source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), class: "primary" %></div>
+  </header>
+  <% flash.each do |type, text| %><div role="status" class="notice <%= type %>"><%= text %></div><% end %>
+  <div class="toolbar">
+    <%= form_with url: root_path, method: :get do |f| %>
+      <%= f.label :q, "Search", class: "sr-only" %><%= f.search_field :q, value: params[:q], placeholder: "Search titles…" %>
+      <%= f.label :project, "Project", class: "sr-only" %><%= f.select :project, [["All projects", ""]] + @config.projects.map { |p| [p["name"], p["id"]] }, selected: params[:project] %>
+      <%= f.hidden_field :source, value: @source %><%= f.hidden_field :hidden, value: params[:hidden] %><%= f.submit "Filter" %>
+    <% end %>
+    <%= link_to(params[:hidden] == "1" ? "← Active items" : "Snoozed / dismissed (#{@hidden_count})", root_path(source: @source, project: params[:project], q: params[:q], hidden: params[:hidden] == "1" ? nil : "1"), class: "text-link") %>
+  </div>
+  <nav class="source-tabs" aria-label="Filter by source">
+    <% {nil => "All sources", "codex" => "Codex", "claude" => "Claude Code", "github" => "GitHub"}.each do |key, label| %>
+      <%= link_to label, root_path(source: key, project: params[:project], q: params[:q], hidden: params[:hidden]), class: @source == key ? "source-tab selected" : "source-tab", aria: {current: @source == key ? "page" : nil} %>
+    <% end %>
+  </nav>
+  <main class="sections <%= 'focused' if @source %>">
+  <% { "codex" => ["01", "Codex", "Threads and summaries"], "claude" => ["02", "Claude Code", "Sessions from Claude Desktop"], "github" => ["03", "GitHub", "My PRs and requested reviews"] }.each do |source, labels| %>
+    <% next if @source && @source != source %>
+    <% state = @states[source]; rows = @items.select { |i| i.source == source }; stale = state&.last_success_at && state.last_success_at < @config.stale_hours.hours.ago %>
+    <section class="section" id="<%= source %>" aria-label="<%= labels[1] %>">
+      <div class="section-heading"><span class="section-number"><%= labels[0] %></span><div><h2><%= labels[1] %> <span class="count"><%= rows.size %></span></h2><p><%= labels[2] %></p></div></div>
+      <% if (connection_message = @config.settings.dig("sources", source, "connection_message")).present? %><p class="warning"><%= connection_message %></p><% end %>
+      <% failure = state&.state == 'unavailable' && (state.last_success_at.present? || @config.settings.dig("sources", source, "automatic") == true) %>
+      <% stale_actions = source == "github" && state&.last_success_at && state.last_success_at < 1.hour.ago %>
+      <% if stale_actions && !failure %><div class="notice alert" role="status"><strong>Action evidence is stale</strong><p>Refresh GitHub to determine which PRs need you. Reimporting this snapshot does not renew its evidence.</p></div><% end %>
+      <% if failure %><div class="notice alert" role="status"><strong>Sync unavailable</strong><p><%= state.message %></p></div><% end %>
+      <details class="source-details"><summary>Source details</summary>
+        <p><%= state&.message || "No reader/export configured" %></p>
+        <% if state&.last_success_at %><small>Last successful read: <%= state.last_success_at.strftime("%d.%m.%Y %H:%M UTC") %></small><% end %>
+        <% if state&.last_attempt_at %><small>Last import attempt: <%= state.last_attempt_at.strftime("%d.%m.%Y %H:%M UTC") %></small><% end %>
+        <p>History readers do not verify live Desktop state. Unknown archive state is not inferred from age.</p>
+      </details>
+      <% if rows.empty? %><div class="empty"><span>—</span><p><%= params[:q].present? || params[:project].present? || params[:hidden] == '1' ? "No items match these filters." : state&.state == 'ok' ? "No items in this snapshot." : "No available items. This does not confirm there is no work." %></p></div><% end %>
+      <% if source == "github" && rows.any? %><div class="buckets"><span>My PRs: <%= rows.count { |r| r.facts["bucket"] == "mine" } %></span><span>Requested reviews: <%= rows.count { |r| r.facts["bucket"] == "review_requested" } %></span></div><% end %>
+      <% attention = rows.select { |item| @activities[item.id].needs_you? }; progress = rows.select { |item| @activities[item.id].group == "progress" }; history = rows.select { |item| @activities[item.id].group == "history" } %>
+      <% if attention.any? %><h3 class="group-heading">Needs you · <%= attention.size %></h3><%= render partial: "item", collection: attention, locals: {source: source, state: state} %><% end %>
+      <% if progress.any? %><h3 class="group-heading">Working / waiting · <%= progress.size %></h3><%= render partial: "item", collection: progress, locals: {source: source, state: state} %><% end %>
+      <% if history.any? %><details class="history-group"><summary>History / unverified · <%= history.size %></summary><%= render partial: "item", collection: history, locals: {source: source, state: state} %></details><% end %>
+    </section>
+  <% end %>
+  </main>
+  <footer><% if @automatic_sessions %>Configured agent histories poll every 60 seconds while the server runs, even with the browser closed. This page checks for changes every 10 seconds; open forms/details pause updates. Live agent state may remain unknown.<br><% end %>Corrections, snooze and checklists are stored locally in SQLite. Dismissing an item does not mark the task complete.<br>Threads stay independent. No AI model calls.</footer>
+</div>

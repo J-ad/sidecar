@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+# Optional official hook receiver. No transcript reads, no model calls.
+# Not automatically installed in any Claude settings.
+require "json"
+require "fileutils"
+require "time"
+path = ARGV.fetch(0) { abort "Usage: bin/claude-event /explicit/output/claude.json < hook-payload.json" }
+payload = JSON.parse(STDIN.read(1_000_000))
+event = payload.fetch("hook_event_name")
+abort "Unsupported event" unless %w[Stop StopFailure Notification UserPromptSubmit PreToolUse PostToolUse].include?(event)
+id = payload.fetch("session_id")
+FileUtils.mkdir_p(File.dirname(path))
+File.open("#{path}.lock", File::RDWR | File::CREAT, 0600) do |lock|
+  lock.flock(File::LOCK_EX)
+  snapshot = File.exist?(path) ? JSON.parse(File.read(path)) : {"version" => 1, "source" => "claude", "items" => []}
+  abort "Wrong snapshot source" unless snapshot["source"] == "claude" && snapshot["version"] == 1
+  rows = snapshot.fetch("items")
+  row = rows.find { |r| r["id"] == id } || {"id" => id, "title" => "Claude Code · #{id.to_s[0,8]}", "facts" => {}}
+  rows << row unless rows.include?(row)
+  row["updated_at"] = Time.now.utc.iso8601
+  row["observed_at"] = row["updated_at"]
+  row["cwd"] = payload["cwd"]
+  notification = payload["notification_type"]
+  runtime = case event
+  when "Stop" then "idle"
+  when "StopFailure" then "blocked"
+  when "UserPromptSubmit", "PreToolUse", "PostToolUse" then "working"
+  when "Notification"
+    {"permission_prompt" => "waiting_approval", "agent_needs_input" => "waiting_input", "elicitation_dialog" => "waiting_input", "elicitation_url_dialog" => "waiting_input", "idle_prompt" => "idle", "agent_completed" => "idle"}[notification]
+  end
+  row["status"] = runtime || "unknown"
+  row["facts"]["agent_finished"] = event == "Stop" ? true : event == "UserPromptSubmit" ? false : nil
+  row["facts"]["task_completed"] = nil
+  row["facts"]["hook_event"] = event
+  text = [event, notification].compact.join(": ")
+  row["evidence"] = "Official lifecycle event: #{text}"
+  if runtime
+    row["facts"]["runtime_signal"] = {"origin" => "claude_hook", "state" => runtime, "observed_at" => row["observed_at"], "event" => event, "notification_type" => notification, "evidence" => "Official lifecycle event: #{text}"}
+  end
+  snapshot.merge!("state" => "unknown", "complete" => false, "observed_at" => Time.now.utc.iso8601,
+    "message" => "Official hook events: only emitting sessions; no complete history or Desktop links.")
+  File.write("#{path}.tmp", JSON.pretty_generate(snapshot), mode: "w", perm: 0600)
+  File.rename("#{path}.tmp", path)
+end

@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+require_relative "../config/environment"
+LocalSessionSync.new.refresh(force: true)
+SourceState.where(source: %w[claude codex]).each { |state| puts "#{state.source}: #{state.state} · #{state.message}" }

@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+require "fileutils"
+abort "Ruby >= 3.2 required; active Ruby: #{RUBY_VERSION}" if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
+Dir.chdir(File.expand_path("..", __dir__)) do
+  %w[storage data log tmp].each { |dir| FileUtils.mkdir_p(dir) }
+  FileUtils.cp("config/panel.example.yml", "config/panel.yml") unless File.exist?("config/panel.yml")
+  system("bundle", "config", "set", "--local", "path", "vendor/bundle", exception: true)
+  system("bundle", "install", exception: true)
+  require_relative "../config/boot"
+  turbo = Gem::Specification.find_by_name("turbo-rails")
+  FileUtils.cp(File.join(turbo.full_gem_path, "app/assets/javascripts/turbo.js"), "public/turbo.js")
+  system("bundle", "exec", "rails", "db:prepare", exception: true)
+  puts "Sidecar ready: bin/start · http://127.0.0.1:4317"
+end

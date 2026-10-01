@@ -1,0 +1,23 @@
+# Portable, no secrets. Paths relative to this project unless absolute.
+stale_after_hours: 24
+projects:
+  - id: example
+    name: Example project
+    color: '#4f46e5'
+    repositories: [example/app]
+    local_paths: []
+sources:
+  codex:
+    path: data/codex.json
+    automatic: false # uses an existing Codex CLI; normal runtime DB writes required
+    python: python3
+    binary: codex
+  claude:
+    path: data/claude.json
+    automatic: false # opt in after bin/setup-sessions and explicit local_paths
+    python: vendor/claude-sdk/bin/python
+  github:
+    path: data/github.json
+    automatic: false # existing gh auth; read-only polling every 5 minutes
+# A read-only connector/approved existing summary producer writes these files.
+# The web UI imports exact paths; optional Claude SDK reads only configured projects.

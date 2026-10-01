@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+require_relative "../config/environment"
+GithubSync.new.refresh(force: true)
+state = SourceState.find_by(source: "github")
+puts state&.message || "Configure the GitHub snapshot path"
+exit(state&.state == "unavailable" ? 1 : 0)

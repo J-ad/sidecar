@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "/absolute/path/to/sidecar/bin/claude-event /absolute/path/to/sidecar/data/claude-events.json"}]}],
+    "PreToolUse": [{"matcher": "", "hooks": [{"type": "command", "command": "/absolute/path/to/sidecar/bin/claude-event /absolute/path/to/sidecar/data/claude-events.json"}]}],
+    "PostToolUse": [{"matcher": "", "hooks": [{"type": "command", "command": "/absolute/path/to/sidecar/bin/claude-event /absolute/path/to/sidecar/data/claude-events.json"}]}],
+    "Stop": [{"hooks": [{"type": "command", "command": "/absolute/path/to/sidecar/bin/claude-event /absolute/path/to/sidecar/data/claude-events.json"}]}],
+    "StopFailure": [{"hooks": [{"type": "command", "command": "/absolute/path/to/sidecar/bin/claude-event /absolute/path/to/sidecar/data/claude-events.json"}]}],
+    "Notification": [{"matcher": "permission_prompt|agent_needs_input|elicitation_dialog|elicitation_url_dialog|idle_prompt|agent_completed", "hooks": [{"type": "command", "command": "/absolute/path/to/sidecar/bin/claude-event /absolute/path/to/sidecar/data/claude-events.json"}]}]
+  }
+}
