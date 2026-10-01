@@ -2,4 +2,13 @@
 Dir.chdir(File.expand_path("..", __dir__))
 abort "Run bin/setup first (missing local Turbo asset)" unless File.exist?("public/turbo.js")
 ENV["WORK_PANEL_BACKGROUND"] ||= "1"
-exec("bundle", "exec", "rails", "server", "-b", "127.0.0.1", "-p", ENV.fetch("PORT", "4317"))
+require "socket"
+port = Integer(ENV.fetch("PORT", "47391"), 10)
+abort "PORT must be between 1024 and 65535" unless port.between?(1024, 65535)
+begin
+  probe = TCPServer.new("127.0.0.1", port)
+  probe.close
+rescue Errno::EADDRINUSE
+  abort "Port #{port} is already in use. Choose another PORT; no process was stopped."
+end
+exec("bundle", "exec", "rails", "server", "-b", "127.0.0.1", "-p", port.to_s)

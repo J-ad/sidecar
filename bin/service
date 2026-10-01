@@ -1,0 +1,86 @@
+#!/usr/bin/env ruby
+# Explicit opt-in user service. Generated machine-specific files stay outside the repo.
+require "rbconfig"
+require "fileutils"
+require "socket"
+require "cgi"
+root = File.expand_path("..", __dir__)
+label = "com.sidecar.local"
+port = Integer(ENV.fetch("PORT", "47391"), 10)
+abort "PORT must be between 1024 and 65535" unless port.between?(1024, 65535)
+ruby = RbConfig.ruby
+service_path = [File.dirname(ruby), ENV.fetch("PATH", "")].join(File::PATH_SEPARATOR)
+uid = Process.uid
+mac = RUBY_PLATFORM.include?("darwin")
+home_dir = Dir.home
+destination = mac ? File.join(home_dir, "Library/LaunchAgents/#{label}.plist") : File.join(home_dir, ".config/systemd/user/sidecar.service")
+target = "gui/#{uid}/#{label}"
+action = ARGV.fetch(0, "status")
+run = ->(*args) { system(*args, exception: true) }
+case action
+when "install"
+  abort "Service already exists: #{destination}. Inspect it; uninstall explicitly before replacing." if File.exist?(destination)
+  abort "Run bin/setup first" unless File.exist?(File.join(root, "public/turbo.js"))
+  begin
+    probe = TCPServer.new("127.0.0.1", port)
+    probe.close
+  rescue Errno::EADDRINUSE
+    abort "Port #{port} is occupied. No service installed and no process stopped."
+  end
+  FileUtils.mkdir_p(File.dirname(destination))
+  FileUtils.mkdir_p(File.join(root, "log"))
+  if mac
+    xml = ->(value) { CGI.escapeHTML(value.to_s) }
+    content = <<~PLIST
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0"><dict>
+      <key>Label</key><string>#{label}</string>
+      <key>ProgramArguments</key><array><string>#{xml.call(ruby)}</string><string>#{xml.call(File.join(root, "bin/start"))}</string></array>
+      <key>WorkingDirectory</key><string>#{xml.call(root)}</string>
+      <key>EnvironmentVariables</key><dict><key>PATH</key><string>#{xml.call(service_path)}</string><key>PORT</key><string>#{port}</string><key>WORK_PANEL_BACKGROUND</key><string>1</string></dict>
+      <key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>30</integer>
+      <key>StandardOutPath</key><string>#{xml.call(File.join(root, "log/service.out.log"))}</string>
+      <key>StandardErrorPath</key><string>#{xml.call(File.join(root, "log/service.err.log"))}</string>
+      </dict></plist>
+    PLIST
+    File.write(destination, content, perm: 0600)
+    run.call("launchctl", "bootstrap", "gui/#{uid}", destination)
+  else
+    # systemd quoting includes spaces and literal percent signs in checkout paths.
+    quote = ->(value) { '"' + value.to_s.gsub('%', '%%').gsub('\\', '\\\\').gsub('"', '\\"') + '"' }
+    content = <<~UNIT
+      [Unit]
+      Description=Sidecar local workspace
+      [Service]
+      Type=simple
+      WorkingDirectory=#{quote.call(root)}
+      ExecStart=#{quote.call(ruby)} #{quote.call(File.join(root, "bin/start"))}
+      Environment=#{quote.call("PATH=#{service_path}")}
+      Environment=PORT=#{port}
+      Environment=WORK_PANEL_BACKGROUND=1
+      Restart=on-failure
+      RestartSec=30
+      [Install]
+      WantedBy=default.target
+    UNIT
+    File.write(destination, content, perm: 0600)
+    run.call("systemctl", "--user", "daemon-reload")
+    run.call("systemctl", "--user", "enable", "--now", "sidecar.service")
+  end
+  puts "Installed #{destination}. URL: http://127.0.0.1:#{port}/"
+when "status"
+  abort "Not installed: #{destination}" unless File.exist?(destination)
+  run.call(*(mac ? ["launchctl", "print", target] : ["systemctl", "--user", "status", "sidecar.service"]))
+when "restart"
+  abort "Not installed: #{destination}" unless File.exist?(destination)
+  run.call(*(mac ? ["launchctl", "kickstart", "-k", target] : ["systemctl", "--user", "restart", "sidecar.service"]))
+when "uninstall"
+  abort "Not installed: #{destination}" unless File.exist?(destination)
+  run.call(*(mac ? ["launchctl", "bootout", target] : ["systemctl", "--user", "disable", "--now", "sidecar.service"]))
+  File.delete(destination)
+  run.call("systemctl", "--user", "daemon-reload") unless mac
+  puts "Removed #{destination}; local data preserved."
+else
+  abort "Usage: [PORT=47391] bin/service install|status|restart|uninstall"
+end

@@ -23,7 +23,7 @@ bin/setup
 bin/start
 ```
 
-Open **http://127.0.0.1:4317/**. Stop with Ctrl-C. Use `PORT=4318 bin/start` for another port. Existing checkouts can keep their directory name.
+Open **http://127.0.0.1:47391/**. Stop with Ctrl-C. Use `PORT=47392 bin/start` for another port. Existing checkouts can keep their directory name.
 
 `bin/setup` installs gems under `vendor/bundle`, copies the bundled Turbo asset, copies example config only when local config is absent, and prepares SQLite. No CDN is used. The app binds to loopback and checks host, remote IP and CSRF. It is a personal local app, not a network-facing multi-user service.
 
@@ -98,7 +98,7 @@ GitHub operational recommendations require recent observations (one hour), curre
 
 ## Updates and local actions
 
-`bin/start` runs a polling thread inside the Rails process. Enabled local agent readers poll about every 60 seconds, even with the browser closed. Configured snapshots are imported too. Stopping Rails, logging out or restarting the machine stops the worker; no OS service or launch agent is installed. Restart with `bin/start`. Use `WORK_PANEL_BACKGROUND=0 bin/start` for on-demand reads.
+`bin/start` runs a polling thread inside the Rails process. Enabled local agent readers poll about every 60 seconds, even with the browser closed. Configured snapshots are imported too. Stopping Rails stops the worker. Login startup is optional and installed only by the explicit service command below. Use `WORK_PANEL_BACKGROUND=0 bin/start` for on-demand reads.
 
 Visible pages check a local revision endpoint every 10 seconds and reload only after a change. Open details, focused inputs and unsaved form values pause reloads, including drafts after blur and editing/navigation during a pending request. This is polling, not a pushed event stream. No system notification permission is requested. Faster official lifecycle hooks, watchers on approved export files, or opt-in attention notifications can be added separately; do not watch private undocumented agent stores.
 
@@ -142,10 +142,10 @@ GitHub facts include `bucket` (`mine` / `review_requested`), `merged`, `head_sha
 bundle exec rails test
 bundle exec rails zeitwerk:check
 # Optional developer check; Node is not needed to run Sidecar:
-node --test test/auto_refresh_test.js
+node --test test/auto_refresh_test.js test/pwa_test.js
 ```
 
-Current release checks passed: 31 Rails tests / 147 assertions, six client tests, Rails loading and HTTP rendering. Tests use separate `storage/test.sqlite3`. They cover atomic/partial imports, timestamps, failed-reader retention, explicit reader scope/cooldown, overlays, production evidence, review/CI rules, archive semantics, source/project/search filters, hidden views, revision reporting and CSRF. Client tests cover blurred drafts, asynchronous races, source navigation and untouched forms. macOS runtime and real local readers were tested. Linux lockfile platforms and portable setup paths are included; **Linux runtime tests have not been run**. HTTP checks are distinct from visual browser QA.
+Current release checks passed: 41 Rails tests / 213 assertions, nine client tests, Rails loading and HTTP rendering. Tests use separate `storage/test.sqlite3`. They cover atomic/partial imports, timestamps, failed-reader retention, explicit reader scope/cooldown, overlays, production evidence, review/CI rules, archive semantics, source/project/search filters, hidden views, revision reporting and CSRF. Client tests cover blurred drafts, asynchronous races, source navigation and untouched forms. macOS runtime and real local readers were tested. Linux lockfile platforms and portable setup paths are included; **Linux runtime tests have not been run**. HTTP checks are distinct from visual browser QA.
 
 An agent can follow [the packaged setup/maintenance skill](skills/sidecar/SKILL.md). It resolves the checkout, checks prerequisites, installs locally, configures one source at a time and verifies honest coverage. The skill is not globally installed automatically; a separately installed copy needs the checkout location to find this README.
 
@@ -162,3 +162,22 @@ The English interface has All sources, Codex, Claude Code and GitHub buttons. Ea
 ### Agent questions
 
 The Agent questions page includes a guarded local request broker. A runtime integration must supply the actual owning connection before a question can be answered. Existing Desktop history readers do not provide that connection; replies remain disabled. Only explicit user-input requests are supported, never tool or permission approvals. Secret questions hand off to the original agent. Disconnected, expired or resolved requests cannot be sent, and uncertain deliveries are not retried automatically. No LLM suggestions or model calls are enabled.
+
+## Install the app and login startup
+
+Open **http://127.0.0.1:47391/**. In Chrome or Edge, use the address-bar install icon (or menu → Install Sidecar). In Safari on macOS, use File → Add to Dock. Browser support varies; a normal tab works too. Installing the PWA does not start the server. No notifications permission is requested.
+
+The service worker caches only the static offline page and icons. Dashboard pages, questions, source data and reply payloads are never cached or queued. If the local server is unavailable, the installed app shows an explicit unavailable page instead of old private data. Changing the port creates a different browser origin; reinstall the app from the new address.
+
+Using the existing Ruby that runs Sidecar:
+
+```sh
+PORT=47391 bin/service install
+bin/service status
+bin/service restart
+bin/service uninstall
+```
+
+On macOS this generates a per-user `com.sidecar.local` LaunchAgent and starts it immediately, then at login. On Linux it generates a user `sidecar.service` systemd unit and enables it at login; systemd user services must be available. No root privileges or lingering are enabled. Linux execution is not tested. Generated files include the actual checkout/Ruby paths and stay outside Git. Moving the checkout or Ruby installation requires uninstalling and reinstalling the service.
+
+Installation refuses to overwrite an existing service or use an occupied port. Stop only an identified existing Sidecar server before installation; never kill another application. `PORT` is configurable (1024–65535), binds only `127.0.0.1`, and the service uses the chosen port on every restart. Logs are local under `log/service.out.log` and `log/service.err.log` on macOS; on Linux use `journalctl --user -u sidecar.service`. Uninstalling stops only the installed service and preserves config, snapshots and SQLite.

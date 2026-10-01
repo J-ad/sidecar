@@ -73,6 +73,14 @@ class PanelTest < ActionDispatch::IntegrationTest
   ensure
     ActionController::Base.allow_forgery_protection = old
   end
+  test "PWA metadata is present and private pages cannot be cached" do
+    get root_path
+    assert_equal "no-store", response.headers["Cache-Control"]
+    assert_select 'link[rel="manifest"][href="/manifest.webmanifest"]'
+    assert_select 'script[src="/pwa.js"]'
+    get questions_path
+    assert_equal "no-store", response.headers["Cache-Control"]
+  end
   test "source archive facts hide agent rows without confusing age, idle or local dismiss" do
     archived = row("archived", "codex", facts: {"archived" => true})
     idle = row("idle", "codex", facts: {"archived" => false, "agent_finished" => true}, source_updated_at: 1.year.ago)
