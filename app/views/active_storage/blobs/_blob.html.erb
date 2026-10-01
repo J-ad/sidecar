@@ -1,0 +1,3 @@
+<% if TodoUpload.allowed_blob?(blob) %>
+  <figure class="attachment attachment--preview"><%= image_tag todo_attachment_path(blob.signed_id), alt: blob.filename.to_s, loading: "lazy" %><figcaption><%= blob.filename %> · <%= number_to_human_size(blob.byte_size) %></figcaption></figure>
+<% end %>

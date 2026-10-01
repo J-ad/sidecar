@@ -1,0 +1,19 @@
+<% if @todo.errors.any? %><div class="notice alert" role="alert"><ul><% @todo.errors.full_messages.each do |message| %><li><%= message %></li><% end %></ul></div><% end %>
+<% if @todo.origin_source %><p class="todo-origin">From <%= @todo.origin_source.capitalize %> · <%= @todo.origin_title %><br><code><%= @todo.origin_external_id %></code></p><% end %>
+<%= form_with model: @todo, html: { class: "todo-form", data: { todo_form: true } } do |f| %>
+  <% if @source_item %><%= hidden_field_tag :from_item, @source_item.id %><% end %>
+  <%= f.label :title, "Title" %><%= f.text_field :title, required: true, maxlength: 300, autofocus: true %>
+  <%= f.label :project_id, "Project" %>
+  <% choices = [["No project", ""]] + @config.projects.map { |p| [p["name"], p["id"]] }; choices << [@todo.project_id, @todo.project_id] if @todo.project_id.present? && choices.none? { |p| p[1] == @todo.project_id } %>
+  <%= f.select :project_id, choices %>
+  <%= f.label :source_link, "Link" %><%= f.text_field :source_link, maxlength: 2000, placeholder: "https://… or codex://threads/…" %>
+  <%= f.label :checklist_text, "Checklist" %><%= f.text_area :checklist_text, rows: 5, placeholder: "One task per line\n[x] Already done", aria: { describedby: "checklist-help" } %>
+  <small id="checklist-help">One task per line. Start a completed task with [x]. Checkboxes appear after saving.</small>
+  <%= f.label :notes, "Notes" %>
+  <input type="hidden" name="todo[notes]" id="todo_notes" value="<%= @todo.notes.body&.to_trix_html %>">
+  <trix-editor input="todo_notes" id="todo_notes_editor" aria-label="Notes" class="trix-content" data-upload-url="<%= todo_attachments_path %>" aria-describedby="notes-help upload-status"></trix-editor>
+  <div class="todo-upload"><label for="todo-images">Add screenshots</label><input id="todo-images" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple data-todo-images></div>
+  <small id="notes-help">Format text, add links, or paste/drop screenshots. PNG, JPEG, GIF or WebP · up to 10 MB each · stored on this computer.</small>
+  <p id="upload-status" role="status" aria-live="polite"></p>
+  <div class="todo-form-actions"><%= f.submit "Save todo", class: "primary" %><%= link_to "Cancel", @todo.persisted? ? todo_path(@todo) : todos_path, class: "text-link" %></div>
+<% end %>

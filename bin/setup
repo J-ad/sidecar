@@ -9,6 +9,9 @@ Dir.chdir(File.expand_path("..", __dir__)) do
   require_relative "../config/boot"
   turbo = Gem::Specification.find_by_name("turbo-rails")
   FileUtils.cp(File.join(turbo.full_gem_path, "app/assets/javascripts/turbo.js"), "public/turbo.js")
+  trix = Gem::Specification.find_by_name("action_text-trix")
+  FileUtils.cp(File.join(trix.full_gem_path, "app/assets/javascripts/trix.js"), "public/trix.js")
+  FileUtils.cp(File.join(trix.full_gem_path, "app/assets/stylesheets/trix.css"), "public/trix.css")
   system("bundle", "exec", "rails", "db:prepare", exception: true)
   puts "Sidecar ready: bin/start · http://127.0.0.1:47391"
 end

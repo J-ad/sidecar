@@ -1,0 +1,12 @@
+<div class="shell todos-shell">
+  <%= render "header", heading: @todo.title %>
+  <main class="item">
+    <% project = @config.projects.find { |p| p["id"] == @todo.project_id } %>
+    <div class="item-meta"><span class="project" style="--project-color:<%= @config.color(project) %>"><%= project&.fetch("name") || @todo.project_id.presence || "No project" %></span><span class="status"><%= @todo.completed? ? "Completed #{@todo.completed_at.strftime('%b %d, %H:%M UTC')}" : "Open" %></span></div>
+    <% if @todo.origin_source %><p class="todo-origin">From <%= @todo.origin_source.capitalize %> · <%= @todo.origin_title %><br><code><%= @todo.origin_external_id %></code><% if Todo.safe_link(@todo.origin_url) %> · <%= link_to "Original source ↗", @todo.origin_url, target: "_blank", rel: "noopener noreferrer" %><% end %></p><% end %>
+    <% if Todo.safe_link(@todo.source_link) %><p><%= link_to @todo.source_link, @todo.source_link, target: "_blank", rel: "noopener noreferrer", class: "todo-link" %></p><% end %>
+    <% if @todo.checklist.any? %><h2 class="todo-subheading">Checklist</h2><ul class="todo-checklist"><% @todo.checklist.each do |entry| %><li><%= form_with url: check_todo_path(@todo), method: :patch do |f| %><%= f.hidden_field :entry_id, value: entry["id"] %><label><%= f.check_box :done, checked: entry["done"], id: "check-#{entry['id']}" %> <span class="<%= 'checked' if entry['done'] %>"><%= entry["label"] %></span></label><%= f.submit "Save", aria: { label: "Save checkbox: #{entry['label']}" } %><% end %></li><% end %></ul><% end %>
+    <% if @todo.notes.present? %><h2 class="todo-subheading">Notes</h2><div class="todo-notes"><%= @todo.notes %></div><% end %>
+    <div class="item-actions"><%= link_to "Edit", edit_todo_path(@todo) %><%= button_to(@todo.completed? ? "Reopen" : "Complete", @todo.completed? ? reopen_todo_path(@todo) : complete_todo_path(@todo), method: :patch) %></div>
+  </main>
+</div>

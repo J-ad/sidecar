@@ -1,7 +1,7 @@
 <div class="shell">
   <header>
     <div><div class="eyebrow">SIDECAR · YOUR LOCAL WORKSPACE</div><h1>What’s next<span class="dot">?</span></h1><p><% if @needs_you > 0 %><%= @needs_you %> confirmed actions need you.<% elsif @action_coverage_incomplete %>No actions confirmed yet · status coverage incomplete.<% else %>No actions need you in the current verified data.<% end %></p></div>
-    <div class="header-actions"><%= link_to "Agent questions", questions_path, class: "text-link" %><span class="local">● Only on this computer</span><%= button_to "Refresh sources ↻", refresh_path(source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), class: "primary" %></div>
+    <div class="header-actions"><%= link_to "Todos", todos_path, class: "text-link" %><%= link_to "Agent questions", questions_path, class: "text-link" %><span class="local">● Only on this computer</span><%= button_to "Refresh sources ↻", refresh_path(source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), class: "primary" %></div>
   </header>
   <% flash.each do |type, text| %><div role="status" class="notice <%= type %>"><%= text %></div><% end %>
   <div class="toolbar">

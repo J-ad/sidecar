@@ -1,0 +1,19 @@
+<div class="shell todos-shell">
+  <%= render "header", heading: "Todos" %>
+  <div class="toolbar">
+    <nav class="source-tabs"><%= link_to "Open (#{@open_count})", todos_path(project: params[:project]), class: !@completed ? "source-tab selected" : "source-tab" %><%= link_to "Completed", todos_path(completed: "1", project: params[:project]), class: @completed ? "source-tab selected" : "source-tab" %></nav>
+    <%= form_with url: todos_path, method: :get do |f| %>
+      <%= f.hidden_field :completed, value: params[:completed] %><%= f.label :project, "Project", class: "sr-only" %><%= f.select :project, [["All projects", ""]] + @config.projects.map { |p| [p["name"], p["id"]] }, selected: params[:project] %><%= f.submit "Filter" %>
+    <% end %>
+  </div>
+  <main>
+    <% if @todos.empty? %><div class="empty"><p>No <%= @completed ? "completed" : "open" %> todos here.</p><%= link_to "Add a custom todo", new_todo_path %></div><% end %>
+    <% @todos.each do |todo| %>
+      <% project = @config.projects.find { |p| p["id"] == todo.project_id } %>
+      <article class="item todo-row">
+        <div><span class="project" style="--project-color:<%= @config.color(project) %>"><%= project&.fetch("name") || todo.project_id.presence || "No project" %></span><h2><%= link_to todo.title, todo %></h2><small><%= todo.origin_source&.capitalize || "Custom" %><% if todo.checklist.any? %> · <%= todo.checklist.count { |e| e["done"] } %>/<%= todo.checklist.size %> checklist tasks<% end %></small></div>
+        <%= button_to(todo.completed? ? "Reopen" : "Complete", todo.completed? ? reopen_todo_path(todo) : complete_todo_path(todo), method: :patch) %>
+      </article>
+    <% end %>
+  </main>
+</div>

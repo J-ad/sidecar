@@ -1,0 +1,5 @@
+<header>
+  <div><div class="eyebrow">SIDECAR · TODOS</div><h1><%= heading %></h1><p>Local tasks · your own completion status</p></div>
+  <nav class="header-actions"><%= link_to "Workspace", root_path, class: "text-link" %><%= link_to "All todos", todos_path, class: "text-link" %><%= link_to "Add todo", new_todo_path, class: "primary" %></nav>
+</header>
+<% flash.each do |type, text| %><div role="status" class="notice <%= type %>"><%= text %></div><% end %>

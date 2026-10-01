@@ -9,6 +9,12 @@
     <link rel="apple-touch-icon" href="/icons/sidecar-192.png">
     <%= csrf_meta_tags %>
     <link rel="stylesheet" href="/panel.css">
+    <% if controller_name == "todos" %>
+      <link rel="stylesheet" href="/trix.css">
+      <link rel="stylesheet" href="/todos.css">
+      <script src="/trix.js" defer></script>
+      <script src="/todos.js" defer></script>
+    <% end %>
     <script type="module" src="/turbo.js"></script>
     <script src="/session-actions.js" defer></script>
     <script src="/pwa.js" defer></script>
