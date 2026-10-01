@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+require "optparse"
+require_relative "../lib/claude_hook_setup"
+action = ARGV.shift || "status"
+options = {}
+OptionParser.new { |parser| parser.on("--project PATH", "Explicit configured project") { |value| options[:project] = value } }.parse!
+abort "Usage: bin/claude-hooks install|status|uninstall --project /absolute/project/path" unless options[:project] && %w[install status uninstall].include?(action)
+begin
+  setup = ClaudeHookSetup.new(root: File.expand_path("..", __dir__), project: options[:project])
+  puts JSON.pretty_generate(setup.public_send(action))
+rescue ArgumentError, JSON::ParserError, Errno::ENOENT => error
+  abort error.message
+end

@@ -109,16 +109,45 @@ class PanelTest < ActionDispatch::IntegrationTest
       assert_equal attempted_at, state.reload.last_attempt_at
   end
 
-  test "recent conversations stay visible and only grounded actions count as needs-you" do
+  test "unknown Claude history is retained without claiming a Desktop current list" do
     @item.destroy!
     row("history", "claude", facts: {"agent_finished" => true})
     get root_path
-    assert_select '#claude .recent-conversations article', count: 1
-    assert_select '#claude details.history-group', count: 0
+    assert_select '#claude .recent-conversations article', count: 0
+    assert_select '#claude details.history-group article', count: 1
+    assert_select '#claude [role=status]', text: /cannot synchronize Desktop archive changes/
+    assert_select '#claude .group-description', text: /does not confirm that no sessions are open/
+    assert_select '#claude details.history-group', count: 1
     assert_select '.group-heading', text: /Needs you/, count: 0
     assert_select 'header p', text: /No actions confirmed yet/
     assert_select '.source-details', count: 3
     assert_select '.notice.alert', count: 0
+  end
+
+  test "fresh lifecycle observations are separate from unknown and expired history" do
+    fresh = row("fresh", "claude", facts: {"runtime_signal" => {"origin" => "claude_hook", "state" => "idle", "observed_at" => Time.current.iso8601, "event" => "Stop"}})
+    stale = row("stale", "claude", facts: {"runtime_signal" => {"origin" => "claude_hook", "state" => "working", "observed_at" => 10.minutes.ago.iso8601}})
+    unknown = row("unknown", "claude", facts: {"archived" => nil, "history_read" => true})
+    archived = row("archived", "claude", facts: {"archived" => true})
+    get root_path, params: {source: "claude"}
+    assert_select "#claude .observed-conversations #item-#{fresh.id}", count: 1
+    [stale, unknown].each { |item| assert_select "#claude details.history-group #item-#{item.id}", count: 1 }
+    assert_select "#item-#{archived.id}", count: 0
+    assert_select 'nav.source-tabs a[href*="source=slack"]', count: 0
+    assert_nil fresh.reload.facts["archived"]
+    assert_nil fresh.facts["task_completed"]
+  end
+
+  test "user-confirmed archive hide shows its provenance and can be restored" do
+    item = row("confirmed", "claude", dismissed: true, overrides: {"archive_confirmation" => {"provenance" => "user-confirmed archived"}})
+    get root_path, params: {source: "claude"}
+    assert_select "#item-#{item.id}", count: 0
+    get root_path, params: {source: "claude", hidden: "1"}
+    assert_select "#item-#{item.id} .manual", text: /User-confirmed archived/
+    patch item_path(item), params: {operation: "restore", source: "claude"}
+    follow_redirect!
+    assert_select "#item-#{item.id}", count: 1
+    assert_nil item.reload.facts["archived"]
   end
 
   test "stale GitHub evidence warns instead of claiming no work" do

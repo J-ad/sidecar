@@ -25,6 +25,15 @@ class ImporterTest < ActiveSupport::TestCase
     assert_equal false, original.facts["task_completed"]
     assert_match "confirm", original.next_action
   end
+  test "user-confirmed archive hide remains local and reversible across refresh" do
+    original = row(overrides: {"archive_confirmation" => {"provenance" => "user-confirmed archived", "recorded_at" => Time.current.iso8601}}, dismissed: true)
+    snapshot([{id: "a", title: "Refreshed", facts: {archived: nil}}])
+    assert original.reload.hidden?
+    assert_equal "user-confirmed archived", original.overrides.dig("archive_confirmation", "provenance")
+    assert_nil original.facts["archived"]
+    original.update!(dismissed: false, snoozed_until: nil)
+    assert_not original.hidden?
+  end
   test "malformed snapshot rolls back entire import and preserves previous data" do
     original = row
     snapshot([{ id: "a", title: "Would update" }, { id: "b" }])

@@ -29,16 +29,17 @@ class SourceSectionsTest < ActionDispatch::IntegrationTest
     assert_select '.group-empty', text: "No matching imported PRs in this section.", count: 3
     assert_select '.github-subsection .count', text: "0", count: 3
   end
-  test "unknown live state does not hide the three newest imported Claude conversations" do
+  test "unknown Claude history retains every row without a recent-N current-list heuristic" do
     rows = 5.times.map { |i| row("claude-#{i}", "claude", title: "Imported conversation #{i}", source_updated_at: i.hours.ago, facts: {"history_read" => true, "archived" => nil, "agent_finished" => nil}) }
     archived = row("archived", "claude", source_updated_at: Time.current, facts: {"archived" => true})
     get root_path, params: {source: "claude"}
     assert_response :success
-    assert_select '#claude .recent-conversations article', count: 3
-    rows.first(3).each { |item| assert_select "#claude .recent-conversations #item-#{item.id}", count: 1 }
+    assert_select '#claude .recent-conversations article', count: 0
+    assert_select '#claude details.history-group article', count: 5
+    rows.each { |item| assert_select "#claude details.history-group #item-#{item.id}", count: 1 }
     rows.drop(3).each { |item| assert_select "#claude details.history-group #item-#{item.id}", count: 1 }
     assert_select "#item-#{archived.id}", count: 0
-    assert_select '#claude .recent-conversations .status', text: "Live state unknown", count: 3
+    assert_select '#claude details.history-group .status', text: "Live state unknown", count: 5
     assert_select 'header p', text: /No actions confirmed yet/
   end
 end

@@ -22,7 +22,7 @@ class ItemActivity
     when "waiting_input" then set("Waiting for you", "Answer the agent's question", "You", "attention", 1, evidence)
     when "blocked" then set("Blocked", "Review the reported failure before continuing", "You", "attention", 2, evidence)
     when "working" then set("Working", "No action while the agent works", "Agent", "progress", 60, evidence)
-    when "idle" then set("Idle · response stopped", "No verified action for you", "Unassigned", "history", 80, evidence)
+    when "idle" then set("Idle · response stopped", "No verified action for you", "Unassigned", "idle", 80, evidence)
     end
   end
   def needs_you?
