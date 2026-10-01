@@ -16,6 +16,6 @@ module Sidecar
     config.action_dispatch.show_exceptions = :none
     config.public_file_server.enabled = true
     config.active_record.schema_format = :ruby
-    config.filter_parameters += [:evidence, :title, :next_action, :status]
+    config.filter_parameters += [:evidence, :title, :next_action, :status, :answers, :questions, :request_payload]
   end
 end

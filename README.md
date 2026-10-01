@@ -154,3 +154,11 @@ Local config, source snapshots, SQLite, logs, caches and installed dependencies 
 ## License
 
 Sidecar's original source is [MIT licensed](LICENSE), copyright Jan Adamski. Third-party dependencies retain their own licenses; installed gems, SDKs and generated dependency assets are not distributed in this repository.
+
+### Source filters and language
+
+The English interface has All sources, Codex, Claude Code, GitHub and Slack buttons. Each button shows only its source and preserves search, project and snoozed/dismissed filters. Imported titles and summaries retain their original language. Slack currently has an explicit unavailable section; the button does not connect an account or read messages.
+
+### Agent questions
+
+The Agent questions page includes a guarded local request broker. A runtime integration must supply the actual owning connection before a question can be answered. Existing Desktop history readers do not provide that connection; replies remain disabled. Only explicit user-input requests are supported, never tool or permission approvals. Secret questions hand off to the original agent. Disconnected, expired or resolved requests cannot be sent, and uncertain deliveries are not retried automatically. No LLM suggestions or model calls are enabled.

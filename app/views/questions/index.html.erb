@@ -1,0 +1,24 @@
+<div class="shell">
+  <header><div><div class="eyebrow">SIDECAR · AGENT QUESTIONS</div><h1>Questions</h1><p>Replies use the exact pending request on its original live connection.</p></div><%= link_to "← Dashboard", root_path, class: "text-link" %></header>
+  <% flash.each do |type, text| %><div role="status" class="notice <%= type %>"><%= text %></div><% end %>
+  <% unless @broker.connected? %><p class="notice">No verified live question connection. External Desktop sessions are history-only; replies are unavailable.</p><% end %>
+  <% if @questions.empty? %><p class="empty">No verified pending questions have been received.</p><% end %>
+  <% @questions.each do |request| %>
+    <article class="item">
+      <div class="item-meta"><span>Codex · <%= request.state %></span><small><%= request.created_at.strftime("%H:%M UTC") %></small></div>
+      <details><summary>Exact session route</summary><p>Thread: <%= request.thread_id %><br>Turn: <%= request.turn_id %><br>Item: <%= request.item_id %></p></details>
+      <% if request.secret? %><p>Sensitive question: answer directly in the original agent. No secret reply form or suggestions are available.</p>
+      <% else %>
+        <%= form_with url: question_reply_path(request), method: :post do |form| %>
+          <% request.questions.each do |question| %><div class="question-field">
+            <label for="answer-<%= request.id %>-<%= question['id'] %>"><%= question['question'] %></label>
+            <% Array(question['options']).each do |option| %><p><strong><%= option['label'] %></strong> · <%= option['description'] %></p><% end %>
+            <%= text_area_tag "answers[#{question['id']}]", nil, id: "answer-#{request.id}-#{question['id']}", required: true, maxlength: 5000, disabled: !@broker.routable?(request) %>
+          </div><% end %>
+          <%= form.submit "Send reply", disabled: !@broker.routable?(request) %>
+        <% end %>
+        <% unless @broker.routable?(request) %><p class="facts">Reply disabled: request resolved/expired or the owning connection is unavailable. No replacement turn will be started.</p><% end %>
+      <% end %>
+    </article>
+  <% end %>
+</div>

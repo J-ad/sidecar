@@ -1,7 +1,7 @@
 <div class="shell">
   <header>
     <div><div class="eyebrow">SIDECAR · YOUR LOCAL WORKSPACE</div><h1>What’s next<span class="dot">?</span></h1><p><% if @needs_you > 0 %><%= @needs_you %> confirmed actions need you.<% elsif @action_coverage_incomplete %>No actions confirmed yet · status coverage incomplete.<% else %>No actions need you in the current verified data.<% end %></p></div>
-    <div class="header-actions"><span class="local">● Only on this computer</span><%= button_to "Refresh sources ↻", refresh_path(source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), class: "primary" %></div>
+    <div class="header-actions"><%= link_to "Agent questions", questions_path, class: "text-link" %><span class="local">● Only on this computer</span><%= button_to "Refresh sources ↻", refresh_path(source: @source, project: params[:project], q: params[:q], hidden: params[:hidden]), class: "primary" %></div>
   </header>
   <% flash.each do |type, text| %><div role="status" class="notice <%= type %>"><%= text %></div><% end %>
   <div class="toolbar">
@@ -13,7 +13,7 @@
     <%= link_to(params[:hidden] == "1" ? "← Active items" : "Snoozed / dismissed (#{@hidden_count})", root_path(source: @source, project: params[:project], q: params[:q], hidden: params[:hidden] == "1" ? nil : "1"), class: "text-link") %>
   </div>
   <nav class="source-tabs" aria-label="Filter by source">
-    <% {nil => "All sources", "codex" => "Codex", "claude" => "Claude Code", "github" => "GitHub"}.each do |key, label| %>
+    <% {nil => "All sources", "codex" => "Codex", "claude" => "Claude Code", "github" => "GitHub", "slack" => "Slack"}.each do |key, label| %>
       <%= link_to label, root_path(source: key, project: params[:project], q: params[:q], hidden: params[:hidden]), class: @source == key ? "source-tab selected" : "source-tab", aria: {current: @source == key ? "page" : nil} %>
     <% end %>
   </nav>
@@ -30,8 +30,8 @@
       <% if failure %><div class="notice alert" role="status"><strong>Sync unavailable</strong><p><%= state.message %></p></div><% end %>
       <details class="source-details"><summary>Source details</summary>
         <p><%= state&.message || "No reader/export configured" %></p>
-        <% if state&.last_success_at %><small>Last successful read: <%= state.last_success_at.strftime("%d.%m.%Y %H:%M UTC") %></small><% end %>
-        <% if state&.last_attempt_at %><small>Last import attempt: <%= state.last_attempt_at.strftime("%d.%m.%Y %H:%M UTC") %></small><% end %>
+        <% if state&.last_success_at %><small>Last successful read: <%= state.last_success_at.strftime("%Y-%m-%d %H:%M UTC") %></small><% end %>
+        <% if state&.last_attempt_at %><small>Last import attempt: <%= state.last_attempt_at.strftime("%Y-%m-%d %H:%M UTC") %></small><% end %>
         <p>History readers do not verify live Desktop state. Unknown archive state is not inferred from age.</p>
       </details>
       <% if rows.empty? %><div class="empty"><span>—</span><p><%= params[:q].present? || params[:project].present? || params[:hidden] == '1' ? "No items match these filters." : state&.state == 'ok' ? "No items in this snapshot." : "No available items. This does not confirm there is no work." %></p></div><% end %>
@@ -40,6 +40,12 @@
       <% if attention.any? %><h3 class="group-heading">Needs you · <%= attention.size %></h3><%= render partial: "item", collection: attention, locals: {source: source, state: state} %><% end %>
       <% if progress.any? %><h3 class="group-heading">Working / waiting · <%= progress.size %></h3><%= render partial: "item", collection: progress, locals: {source: source, state: state} %><% end %>
       <% if history.any? %><details class="history-group"><summary>History / unverified · <%= history.size %></summary><%= render partial: "item", collection: history, locals: {source: source, state: state} %></details><% end %>
+    </section>
+  <% end %>
+  <% if @source.nil? || @source == "slack" %>
+    <section class="section" id="slack" aria-label="Slack">
+      <div class="section-heading"><span class="section-number">04</span><div><h2>Slack</h2><p>Selected threads and next actions</p></div></div>
+      <div class="empty"><span>—</span><p>Slack is not connected. No threads or action status are available.</p></div>
     </section>
   <% end %>
   </main>

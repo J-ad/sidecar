@@ -4,6 +4,7 @@ require "rails/test_help"
 require "tmpdir"
 class ActiveSupport::TestCase
   setup do
+    AgentQuestion.delete_all
     Item.delete_all
     SourceState.delete_all
   end
